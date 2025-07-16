@@ -13,6 +13,8 @@ export default function PinyinQuiz() {
     const [selectedLevels, setSelectedLevels] = useState({ 1: true, 2: false, 3: false, 4: false, 5: false, 6: false });
     const [totalSelectedWords, setTotalSelectedWords] = useState(0);
     const [numChoices, setNumChoices] = useState(6); // Кол-во вариантов ответа (включая правильный)
+    const [questionFormat, setQuestionFormat] = useState('pinyin_rus'); // Формат вопроса
+    const [answerFormat, setAnswerFormat] = useState('hanzi'); // Формат ответа
 
     // Карта тонов для отображения значков
     const toneSymbols = ['ˉ', 'ˊ', 'ˇ', 'ˋ'];
@@ -76,10 +78,11 @@ export default function PinyinQuiz() {
         // Формируем вопрос
         const question = {
             ...questionWord, // Копируем все данные слова
-            filename: formatAudioFilename(questionWord.id) // Добавляем имя файла
+            filename: formatAudioFilename(questionWord.id), // Добавляем имя файла
+            displayText: formatDisplayText(questionWord, questionFormat) // Добавляем отформатированный текст
         };
 
-        // Формируем варианты ответов (правильный + 3 неправильных)
+        // Формируем варианты ответов (правильный + неправильные)
         const choices = [questionWord]; // Начинаем с правильного ответа
         const distractors = wordPool.filter(word => word.id !== questionWord.id); // Все остальные слова - кандидаты в дистракторы
 
@@ -95,8 +98,12 @@ export default function PinyinQuiz() {
             [choices[i], choices[j]] = [choices[j], choices[i]];
         }
 
-        // Возвращаем только нужные поля для вариантов (id и hanzi)
-        const formattedChoices = choices.map(c => ({ id: c.id, hanzi: c.hanzi }));
+        // Форматируем варианты ответов согласно выбранному формату
+        const formattedChoices = choices.map(c => ({ 
+            id: c.id, 
+            displayText: formatDisplayText(c, answerFormat),
+            ...c // Сохраняем все данные для возможного использования
+        }));
 
         return { question, choices: formattedChoices };
     }
@@ -209,19 +216,98 @@ export default function PinyinQuiz() {
         }
     }
 
+    // Функции для работы с форматами вопросов и ответов
+    function getFormatOptions() {
+        return [
+            { value: 'hanzi', label: 'Иероглифы (汉字)' },
+            { value: 'pinyin', label: 'Пиньинь (pīnyīn)' },
+            { value: 'rus', label: 'Русский перевод' },
+            { value: 'hanzi_pinyin', label: 'Иероглифы + Пиньинь' },
+            { value: 'hanzi_rus', label: 'Иероглифы + Русский' },
+            { value: 'pinyin_rus', label: 'Пиньинь + Русский' }
+        ];
+    }
+
+    function getFormatComponents(format) {
+        // Extract individual components from a format
+        switch (format) {
+            case 'hanzi':
+                return ['hanzi'];
+            case 'pinyin':
+                return ['pinyin'];
+            case 'rus':
+                return ['rus'];
+            case 'hanzi_pinyin':
+                return ['hanzi', 'pinyin'];
+            case 'hanzi_rus':
+                return ['hanzi', 'rus'];
+            case 'pinyin_rus':
+                return ['pinyin', 'rus'];
+            default:
+                return [];
+        }
+    }
+
+    function getAvailableAnswerFormats(questionFormat) {
+        const allFormats = getFormatOptions();
+        const questionComponents = getFormatComponents(questionFormat);
+        
+        // Filter out formats that share any component with the question format
+        return allFormats.filter(format => {
+            const answerComponents = getFormatComponents(format.value);
+            // Check if there's any overlap between question and answer components
+            return !questionComponents.some(qComp => answerComponents.includes(qComp));
+        });
+    }
+
+    function formatDisplayText(word, format) {
+        switch (format) {
+            case 'hanzi':
+                return word.hanzi;
+            case 'pinyin':
+                return word.pinyin;
+            case 'rus':
+                return word.rus.join(', ');
+            case 'hanzi_pinyin':
+                return `${word.hanzi}\n${word.pinyin}`;
+            case 'hanzi_rus':
+                return `${word.hanzi}\n${word.rus.join(', ')}`;
+            case 'pinyin_rus':
+                return `${word.pinyin}\n${word.rus.join(', ')}`;
+            default:
+                return word.hanzi;
+        }
+    }
+
     // Компоненты
 
 // --- Обновляем HomeMenu ---
  function HomeMenu({
      startGame,
      selectedLevels, handleLevelChange, levelCounts, totalSelectedWords,
-     numChoices, setNumChoices // Добавляем новые пропсы
+     numChoices, setNumChoices, // Добавляем новые пропсы
+     questionFormat, setQuestionFormat, answerFormat, setAnswerFormat
     }) {
      const canStartHsk = totalSelectedWords > 0;
      const choiceOptions = [4, 6, 8, 10, 12]; // Возможные варианты кол-ва ответов
 
      const handleChoiceChange = (event) => {
          setNumChoices(Number(event.target.value)); // Обновляем состояние при выборе
+     };
+
+     const handleQuestionFormatChange = (event) => {
+         const newQuestionFormat = event.target.value;
+         setQuestionFormat(newQuestionFormat);
+         
+         // Автоматически обновляем формат ответа, если он совпадает с вопросом
+         const availableAnswerFormats = getAvailableAnswerFormats(newQuestionFormat);
+         if (availableAnswerFormats.length > 0 && !availableAnswerFormats.find(f => f.value === answerFormat)) {
+             setAnswerFormat(availableAnswerFormats[0].value);
+         }
+     };
+
+     const handleAnswerFormatChange = (event) => {
+         setAnswerFormat(event.target.value);
      };
 
      return (
@@ -267,7 +353,7 @@ export default function PinyinQuiz() {
                      ))}
                  </div>
 
-                 {/* --- НОВЫЙ БЛОК: Выбор количества вариантов --- */}
+                 {/* --- БЛОК: Выбор количества вариантов --- */}
                   <h3 class="text-xl font-bold mb-2">2. Количество вариантов ответа:</h3>
                   <div class="mb-6">
                       <select
@@ -282,6 +368,38 @@ export default function PinyinQuiz() {
                          ))}
                       </select>
                   </div>
+                 {/* --- КОНЕЦ БЛОКА --- */}
+
+                 {/* --- НОВЫЙ БЛОК: Выбор формата вопроса и ответа --- */}
+                 <h3 class="text-xl font-bold mb-2">3. Формат вопроса и ответа:</h3>
+                 <div class="mb-4">
+                     <label class="block text-sm font-medium text-gray-300 mb-2">Что показывать в вопросе:</label>
+                     <select
+                         value={questionFormat}
+                         onChange={handleQuestionFormatChange}
+                         class="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-blue-500 focus:border-blue-500"
+                     >
+                         {getFormatOptions().map(option => (
+                             <option key={option.value} value={option.value}>
+                                 {option.label}
+                             </option>
+                         ))}
+                     </select>
+                 </div>
+                 <div class="mb-6">
+                     <label class="block text-sm font-medium text-gray-300 mb-2">Что показывать в вариантах ответа:</label>
+                     <select
+                         value={answerFormat}
+                         onChange={handleAnswerFormatChange}
+                         class="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-blue-500 focus:border-blue-500"
+                     >
+                         {getAvailableAnswerFormats(questionFormat).map(option => (
+                             <option key={option.value} value={option.value}>
+                                 {option.label}
+                             </option>
+                         ))}
+                     </select>
+                 </div>
                  {/* --- КОНЕЦ НОВОГО БЛОКА --- */}
 
                  {/* Отображение кол-ва выбранных слов */}
@@ -328,26 +446,37 @@ function ScoreDisplay({ correctCount, incorrectCount }) {
     }
 
     function QuestionAudio({ questionData, selectedAnswer, playAudio }) {
-         // Добавим отображение пиньинь и перевода после ответа в HSK игре
         let displayText = '???';
-        if (selectedAnswer && questionData && questionData.question) {
+        
+        if (questionData && questionData.question) {
             if(mode === 'hsk_game') {
-                displayText = `${questionData.question.pinyin} (${questionData.question.rus.join(', ')})`;
+                // Всегда показываем выбранный формат вопроса (не меняем после ответа)
+                displayText = questionData.question.displayText || '???';
             } else {
                 displayText = questionData.question.pinyin; // Для слогов/тонов
             }
         }
 
+        // Обработка многострочного текста
+        const textLines = displayText.split('\n');
+
         return (
             <div class="mb-6">
                 <button
-                    class="w-auto h-auto text-xl px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-500 flex items-center justify-center min-w-[160px] min-h-[64px]" // Сделаем кнопку адаптивной по ширине
+                    class="w-auto h-auto text-xl px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-500 flex items-center justify-center min-w-[160px] min-h-[64px] whitespace-pre-line"
                     onClick={() => playAudio(questionData?.question?.filename)}
                     disabled={!questionData?.question?.filename}
                 >
-                     <span class="mr-2">🔊</span> {displayText}
-                 </button>
-             </div>
+                    <span class="mr-2">🔊</span>
+                    <div class="text-center">
+                        {textLines.map((line, index) => (
+                            <div key={index} class={index === 0 && textLines.length > 1 ? 'text-2xl mb-1' : 'text-lg'}>
+                                {line}
+                            </div>
+                        ))}
+                    </div>
+                </button>
+            </div>
         );
     }
 
@@ -438,13 +567,18 @@ function ScoreDisplay({ correctCount, incorrectCount }) {
     function HskGame({ questionData, selectedAnswer, handleAnswerClick }) {
         if (!questionData) return null; // Не рендерим, если нет данных
 
+        // Функция для обрезки длинного текста
+        function truncateText(text, maxLength = 20) {
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength - 3) + '...';
+        }
+
         return (
             <div class="grid grid-cols-2 gap-4">
                 {questionData.choices.map(choice => {
                     const isCorrectChoice = selectedAnswer && choice.id === questionData.question.id;
                     const isSelectedChoice = selectedAnswer && choice.id === selectedAnswer.id;
                     const isIncorrectSelected = selectedAnswer && isSelectedChoice && !isCorrectChoice;
-                    const isRevealedButNotSelected = selectedAnswer && !isSelectedChoice;
 
                     let buttonClass = 'bg-gray-800 border-gray-600 hover:bg-gray-700'; // Default
                      if (selectedAnswer) {
@@ -457,14 +591,24 @@ function ScoreDisplay({ correctCount, incorrectCount }) {
                         }
                     }
 
+                    // Обработка многострочного текста для ответов с обрезкой
+                    const textLines = choice.displayText.split('\n').map(line => truncateText(line));
+
                     return (
                         <button
                             key={choice.id}
-                            class={`w-40 h-20 text-3xl px-6 py-3 rounded-lg font-medium border-2 transition-all flex justify-center items-center ${buttonClass}`}
+                            class={`min-w-[160px] max-w-[200px] min-h-[80px] px-4 py-3 rounded-lg font-medium border-2 transition-all flex justify-center items-center ${buttonClass}`}
                             onClick={() => handleAnswerClick(choice)}
                             disabled={selectedAnswer !== null} // Блокируем после ответа
+                            title={choice.displayText} // Показываем полный текст при наведении
                         >
-                            {choice.hanzi}
+                            <div class="text-center overflow-hidden">
+                                {textLines.map((line, index) => (
+                                    <div key={index} class={`${index === 0 && textLines.length > 1 ? 'text-xl mb-1' : 'text-base'} leading-tight`}>
+                                        {line}
+                                    </div>
+                                ))}
+                            </div>
                         </button>
                     );
                 })}
@@ -497,6 +641,10 @@ function ScoreDisplay({ correctCount, incorrectCount }) {
                     totalSelectedWords={totalSelectedWords}
                     numChoices={numChoices}
                     setNumChoices={setNumChoices}
+                    questionFormat={questionFormat}
+                    setQuestionFormat={setQuestionFormat}
+                    answerFormat={answerFormat}
+                    setAnswerFormat={setAnswerFormat}
                 />
             ) : mode === 'hsk' ? (
                 // Режим таблицы HSK
