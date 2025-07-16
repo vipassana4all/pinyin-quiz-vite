@@ -635,37 +635,80 @@ export default function PinyinQuiz() {
                 <div class="mb-4 text-center">
                     <span class="text-xl font-bold">Показано слов: {filteredData.length}</span>
                 </div>
-                <table class="w-full border-collapse border border-gray-700 text-white">
-                    <thead>
-                        <tr class="bg-gray-700">
-                            <th class="border border-gray-600 p-2">Level</th>
-                            <th class="border border-gray-600 p-2">ID</th>
-                            <th class="border border-gray-600 p-2">Hanzi</th>
-                            <th class="border border-gray-600 p-2">Pinyin</th>
-                            <th class="border border-gray-600 p-2">Русский</th>
-                            <th class="border border-gray-600 p-2">🔊</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredData.map(entry => (
-                            <tr key={entry.id} class="odd:bg-gray-900 even:bg-gray-800">
-                                <td class="border border-gray-600 p-2 text-center">{entry.level}</td>
-                                <td class="border border-gray-600 p-2 text-center">{entry.id}</td>
-                                <td class="border border-gray-600 p-2 text-center min-w-[140px] text-3xl font-sans leading-relaxed">{entry.hanzi}</td>
-                                <td class="border border-gray-600 p-2 text-center text-xl">{entry.pinyin}</td>
-                                <td class="border border-gray-600 p-2">{entry.rus.join('; ')}</td>
-                                <td class="border border-gray-600 p-2 text-center">
-                                    <button
-                                        class="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-500"
-                                        onClick={() => playAudio(formatAudioFilename(entry.id))}
-                                    >
-                                        🔊
-                                    </button>
-                                </td>
+                
+                {/* Desktop Table */}
+                <div class="hidden md:block">
+                    <table class="w-full border-collapse border border-gray-700 text-white">
+                        <thead>
+                            <tr class="bg-gray-700">
+                                <th class="border border-gray-600 p-2">Level</th>
+                                <th class="border border-gray-600 p-2">ID</th>
+                                <th class="border border-gray-600 p-2">Hanzi</th>
+                                <th class="border border-gray-600 p-2">Pinyin</th>
+                                <th class="border border-gray-600 p-2">Русский</th>
+                                <th class="border border-gray-600 p-2">🔊</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {filteredData.map(entry => (
+                                <tr key={entry.id} class="odd:bg-gray-900 even:bg-gray-800">
+                                    <td class="border border-gray-600 p-2 text-center">{entry.level}</td>
+                                    <td class="border border-gray-600 p-2 text-center">{entry.id}</td>
+                                    <td class="border border-gray-600 p-2 text-center min-w-[140px] text-3xl font-sans leading-relaxed">{entry.hanzi}</td>
+                                    <td class="border border-gray-600 p-2 text-center text-xl">{entry.pinyin}</td>
+                                    <td class="border border-gray-600 p-2">{entry.rus.join('; ')}</td>
+                                    <td class="border border-gray-600 p-2 text-center">
+                                        <button
+                                            class="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-500"
+                                            onClick={() => playAudio(formatAudioFilename(entry.id))}
+                                        >
+                                            🔊
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Mobile Table */}
+                <div class="block md:hidden">
+                    <table class="w-full border-collapse border border-gray-700 text-white table-fixed">
+                        <thead>
+                            <tr class="bg-gray-700">
+                                <th class="border border-gray-600 p-1 w-12 text-xs">Lv<br/>ID</th>
+                                <th class="border border-gray-600 p-1 w-16 text-xs">汉字<br/>拼音</th>
+                                <th class="border border-gray-600 p-1 text-xs">Русский</th>
+                                <th class="border border-gray-600 p-1 w-8 text-xs">🔊</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredData.map(entry => (
+                                <tr key={entry.id} class="odd:bg-gray-900 even:bg-gray-800">
+                                    <td class="border border-gray-600 p-1 text-center text-xs">
+                                        <div class="font-bold text-blue-400">{entry.level}</div>
+                                        <div class="text-xs text-gray-500">{entry.id}</div>
+                                    </td>
+                                    <td class="border border-gray-600 p-1 text-center">
+                                        <div class="text-lg font-sans leading-tight mb-1">{entry.hanzi}</div>
+                                        <div class="text-xs text-gray-300">{entry.pinyin}</div>
+                                    </td>
+                                    <td class="border border-gray-600 p-1 text-xs leading-tight overflow-hidden">
+                                        <div class="break-words">{entry.rus.join('; ')}</div>
+                                    </td>
+                                    <td class="border border-gray-600 p-1 text-center">
+                                        <button
+                                            class="px-1 py-1 bg-blue-600 text-white rounded hover:bg-blue-500 text-xs w-6 h-6 flex items-center justify-center"
+                                            onClick={() => playAudio(formatAudioFilename(entry.id))}
+                                        >
+                                            🔊
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         );
     }
