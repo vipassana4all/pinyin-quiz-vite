@@ -14,8 +14,8 @@ export default function PinyinQuiz() {
     const [selectedLevels, setSelectedLevels] = useState({ 1: true, 2: false, 3: false, 4: false, 5: false, 6: false });
     const [totalSelectedWords, setTotalSelectedWords] = useState(0);
     const [numChoices, setNumChoices] = useState(6); // Кол-во вариантов ответа (включая правильный)
-    const [questionFormat, setQuestionFormat] = useState('pinyin_rus'); // Формат вопроса
-    const [answerFormat, setAnswerFormat] = useState('hanzi'); // Формат ответа
+    const [questionFormat, setQuestionFormat] = useState('pinyin'); // Формат вопроса
+    const [answerFormat, setAnswerFormat] = useState('hanzi_rus'); // Формат ответа
 
     // Карта тонов для отображения значков
     const toneSymbols = ['ˉ', 'ˊ', 'ˇ', 'ˋ'];
@@ -30,12 +30,12 @@ export default function PinyinQuiz() {
             // Можно оставить console.log для проверки в консоли
             console.log('Подсчитанные уровни:', levelCounts);
         } else {
-             console.error('Ошибка: hskData не является массивом!');
-             for (let level = 1; level <= 6; level++) { levelCounts[level] = 0; }
+            console.error('Ошибка: hskData не является массивом!');
+            for (let level = 1; level <= 6; level++) { levelCounts[level] = 0; }
         }
     } catch (error) {
-         console.error('Ошибка при подсчете слов по уровням:', error);
-         for (let level = 1; level <= 6; level++) { levelCounts[level] = 0; }
+        console.error('Ошибка при подсчете слов по уровням:', error);
+        for (let level = 1; level <= 6; level++) { levelCounts[level] = 0; }
     }
 
     // Пересчитываем общее количество выбранных слов при изменении выбранных уровней
@@ -47,7 +47,7 @@ export default function PinyinQuiz() {
     useEffect(() => {
         if (telegramApp.isInTelegram) {
             console.log('Running in Telegram WebApp');
-            
+
             // Set up back button for game modes
             if (userInteracted) {
                 telegramApp.showBackButton(() => {
@@ -79,7 +79,7 @@ export default function PinyinQuiz() {
         }
         setTotalSelectedWords(total);
     }
-    
+
     function formatAudioFilename(id) {
         return `hsk2/${String(id).padStart(4, '0')}.mp3`;
     }
@@ -88,14 +88,14 @@ export default function PinyinQuiz() {
     function playAudio(filename) {
         if (filename) {
             const audio = new Audio(`sounds/${filename}`);
-            audio.play().catch(() => {}); // Игнорируем ошибки автоплея
+            audio.play().catch(() => { }); // Игнорируем ошибки автоплея
         }
     }
 
     function getFilteredHskWords() {
         return hskData.filter(entry => selectedLevels[Number(entry.level)]); // Используем Number() на всякий случай
     }
-    
+
     function generateHskQuestion(wordPool, numChoices) {
         if (!wordPool || wordPool.length === 0) return null; // Нет слов для игры
 
@@ -113,55 +113,55 @@ export default function PinyinQuiz() {
         // Функция для получения умных дистракторов
         function getSmartDistractors(correctWord, allWords, needed) {
             const distractors = allWords.filter(word => word.id !== correctWord.id);
-            
+
             // Приоритизируем дистракторы по схожести
             const scoredDistractors = distractors.map(word => {
                 let score = 0;
-                
+
                 // Схожесть по уровню HSK (слова того же уровня более похожи)
                 if (word.level === correctWord.level) score += 3;
-                
+
                 // Схожесть по длине пиньинь
                 if (Math.abs(word.pinyin.length - correctWord.pinyin.length) <= 1) score += 2;
-                
+
                 // Схожесть по первому символу пиньинь (похожие звуки)
                 if (word.pinyin[0] === correctWord.pinyin[0]) score += 2;
-                
+
                 // Схожесть по тону (последний символ пиньинь часто содержит тон)
                 const correctTone = correctWord.pinyin.slice(-1);
                 const wordTone = word.pinyin.slice(-1);
                 if (correctTone === wordTone && /[1-4]/.test(correctTone)) score += 1;
-                
+
                 // Схожесть по количеству иероглифов
                 if (word.hanzi.length === correctWord.hanzi.length) score += 1;
-                
+
                 // Добавляем случайность для разнообразия
                 score += Math.random() * 2;
-                
+
                 return { word, score };
             });
-            
+
             // Сортируем по убыванию схожести и берем нужное количество
             scoredDistractors.sort((a, b) => b.score - a.score);
-            
+
             // Берем только 20% лучших кандидатов, но минимум нужное количество + 2 для выбора
             const minCandidates = Math.max(needed + 2, 4); // Минимум 4 кандидата или needed + 2
             const topPercentage = Math.max(minCandidates, Math.floor(scoredDistractors.length * 0.2));
             const topCandidates = scoredDistractors.slice(0, topPercentage);
             const selected = [];
-            
+
             while (selected.length < needed && topCandidates.length > 0) {
                 const randomIndex = Math.floor(Math.random() * topCandidates.length);
                 selected.push(topCandidates.splice(randomIndex, 1)[0].word);
             }
-            
+
             return selected;
         }
 
         // Формируем варианты ответов с умными дистракторами
         const choices = [questionWord]; // Начинаем с правильного ответа
         const numDistractorsNeeded = Math.min(numChoices - 1, wordPool.length - 1);
-        
+
         if (numDistractorsNeeded > 0) {
             const smartDistractors = getSmartDistractors(questionWord, wordPool, numDistractorsNeeded);
             choices.push(...smartDistractors);
@@ -174,8 +174,8 @@ export default function PinyinQuiz() {
         }
 
         // Форматируем варианты ответов согласно выбранному формату
-        const formattedChoices = choices.map(c => ({ 
-            id: c.id, 
+        const formattedChoices = choices.map(c => ({
+            id: c.id,
             displayText: formatDisplayText(c, answerFormat),
             ...c // Сохраняем все данные для возможного использования
         }));
@@ -189,10 +189,10 @@ export default function PinyinQuiz() {
             alert('Пожалуйста, выберите хотя бы один уровень HSK');
             return;
         }
-        
+
         // Haptic feedback for button press
         telegramApp.hapticFeedback('light');
-        
+
         setMode(selectedMode);
         setUserInteracted(true);
         setSelectedAnswer(null); // Сброс выбранного ответа
@@ -208,7 +208,7 @@ export default function PinyinQuiz() {
             const newQuestion = generateHskQuestion(filteredWords, numChoices);
             setQuestionData(newQuestion);
             if (newQuestion) {
-                 setTimeout(() => playAudio(newQuestion.question.filename), 100);
+                setTimeout(() => playAudio(newQuestion.question.filename), 100);
             } else {
                 alert("Недостаточно слов в выбранных уровнях для начала игры.");
                 goHome(); // Возврат в меню, если слов нет
@@ -219,7 +219,7 @@ export default function PinyinQuiz() {
             setQuestionData(newQuestion);
             // Убедись, что generateAnswers возвращает объект с полем question.filename
             if (newQuestion && newQuestion.question && newQuestion.question.filename) {
-                 setTimeout(() => playAudio(newQuestion.question.filename), 100);
+                setTimeout(() => playAudio(newQuestion.question.filename), 100);
             }
         }
     }
@@ -252,13 +252,13 @@ export default function PinyinQuiz() {
         if (filename) {
             setTimeout(() => playAudio(filename), 100);
         } else if (mode === 'hsk_game' && !newQuestion) {
-             alert("Недостаточно слов в выбранных уровнях для продолжения игры.");
-             goHome();
+            alert("Недостаточно слов в выбранных уровнях для продолжения игры.");
+            goHome();
         }
     }
 
     function handleAnswerClick(choice) {
-         if (selectedAnswer !== null) return; // Не реагируем, если ответ уже выбран
+        if (selectedAnswer !== null) return; // Не реагируем, если ответ уже выбран
 
         setSelectedAnswer(choice); // Сохраняем выбор пользователя
 
@@ -285,10 +285,10 @@ export default function PinyinQuiz() {
     function handleLevelChange(level) {
         const newSelectedLevels = { ...selectedLevels };
         newSelectedLevels[level] = !newSelectedLevels[level];
-        
+
         // Проверяем, что хотя бы один уровень выбран
         const anySelected = Object.values(newSelectedLevels).some(selected => selected);
-        
+
         if (anySelected) {
             setSelectedLevels(newSelectedLevels);
         } else {
@@ -331,7 +331,7 @@ export default function PinyinQuiz() {
     function getAvailableAnswerFormats(questionFormat) {
         const allFormats = getFormatOptions();
         const questionComponents = getFormatComponents(questionFormat);
-        
+
         // Filter out formats that share any component with the question format
         return allFormats.filter(format => {
             const answerComponents = getFormatComponents(format.value);
@@ -361,153 +361,166 @@ export default function PinyinQuiz() {
 
     // Компоненты
 
-// --- Обновляем HomeMenu ---
- function HomeMenu({
-     startGame,
-     selectedLevels, handleLevelChange, levelCounts, totalSelectedWords,
-     numChoices, setNumChoices, // Добавляем новые пропсы
-     questionFormat, setQuestionFormat, answerFormat, setAnswerFormat
+    // --- Обновляем HomeMenu ---
+    function HomeMenu({
+        startGame,
+        selectedLevels, handleLevelChange, levelCounts, totalSelectedWords,
+        numChoices, setNumChoices, // Добавляем новые пропсы
+        questionFormat, setQuestionFormat, answerFormat, setAnswerFormat
     }) {
-     const canStartHsk = totalSelectedWords > 0;
-     const choiceOptions = [4, 6, 8, 10, 12]; // Возможные варианты кол-ва ответов
+        const canStartHsk = totalSelectedWords > 0;
+        const choiceOptions = [4, 6, 8, 10, 12]; // Возможные варианты кол-ва ответов
 
-     const handleChoiceChange = (event) => {
-         setNumChoices(Number(event.target.value)); // Обновляем состояние при выборе
-     };
+        const handleChoiceChange = (event) => {
+            setNumChoices(Number(event.target.value)); // Обновляем состояние при выборе
+        };
 
-     const handleQuestionFormatChange = (event) => {
-         const newQuestionFormat = event.target.value;
-         setQuestionFormat(newQuestionFormat);
-         
-         // Автоматически обновляем формат ответа, если он совпадает с вопросом
-         const availableAnswerFormats = getAvailableAnswerFormats(newQuestionFormat);
-         if (availableAnswerFormats.length > 0 && !availableAnswerFormats.find(f => f.value === answerFormat)) {
-             setAnswerFormat(availableAnswerFormats[0].value);
-         }
-     };
+        const handleQuestionFormatChange = (event) => {
+            const newQuestionFormat = event.target.value;
+            setQuestionFormat(newQuestionFormat);
 
-     const handleAnswerFormatChange = (event) => {
-         setAnswerFormat(event.target.value);
-     };
+            // Автоматически обновляем формат ответа, если он совпадает с вопросом
+            const availableAnswerFormats = getAvailableAnswerFormats(newQuestionFormat);
+            if (availableAnswerFormats.length > 0 && !availableAnswerFormats.find(f => f.value === answerFormat)) {
+                setAnswerFormat(availableAnswerFormats[0].value);
+            }
+        };
 
-     return (
-         <div class="flex flex-col items-center gap-8 max-w-md">
-             <h1 class="text-4xl font-bold mb-2">Pinyin</h1>
-             {/* Кнопки Слоги/Тоны */}
-             <div class="flex gap-4">
-                 <button class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-500 text-lg" onClick={() => startGame('syllables')}>Слоги</button>
-                 <button class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-500 text-lg" onClick={() => startGame('tones')}>Тоны</button>
-             </div>
+        const handleAnswerFormatChange = (event) => {
+            setAnswerFormat(event.target.value);
+        };
 
-             {/* ===== Блок HSK (Изменен) ===== */}
-             <div class="w-full border-t border-gray-700 pt-6 mt-4"> {/* Добавлен разделитель и отступ */}
-                 <h2 class="text-2xl font-bold mb-4 text-center">HSK 2</h2>
+        return (
+            <div class="flex flex-col items-center gap-4 max-w-md px-4">
+                {/* ===== Блок HSK (Compact) ===== */}
+                <div class="w-full">
+                    <h2 class="text-xl font-bold mb-3 text-center">HSK 2</h2>
 
-                 {/* Кнопка Список слов (остается сверху) */}
-                 <div class="mb-6">
-                      <button
-                         class="w-full px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-500 text-lg"
-                         onClick={() => startGame('hsk')}
-                     >
-                         Список слов HSK
-                     </button>
-                  </div>
+                    {/* Выбор уровней */}
+                    <h3 class="text-lg font-bold mb-2">1. Уровень:</h3>
+                    <div class="grid grid-cols-3 gap-2 mb-3">
+                        {Object.keys(levelCounts).sort((a, b) => a - b).map(level => (
+                            <div key={level} class="flex items-center bg-gray-800 p-2 rounded text-xs">
+                                <input
+                                    type="checkbox"
+                                    id={`level-${level}`}
+                                    checked={!!selectedLevels[level]}
+                                    onChange={() => handleLevelChange(Number(level))}
+                                    class="mr-1 h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-1"
+                                />
+                                <label htmlFor={`level-${level}`} class="text-xs font-medium text-gray-300 cursor-pointer">
+                                    {level} ({levelCounts[level] || 0})
+                                </label>
+                            </div>
+                        ))}
+                    </div>
 
-                 {/* Выбор уровней */}
-                 <h3 class="text-xl font-bold mb-2">1. Выберите уровень:</h3>
-                 <div class="grid grid-cols-2 gap-3 mb-6"> {/* Увеличен нижний отступ */}
-                     {Object.keys(levelCounts).sort((a, b) => a - b).map(level => (
-                         <div key={level} class="flex items-center bg-gray-800 p-2 rounded">
-                             {/* ... input и label для чекбокса уровня ... */}
-                            <input
-                                 type="checkbox"
-                                 id={`level-${level}`}
-                                 checked={!!selectedLevels[level]}
-                                 onChange={() => handleLevelChange(Number(level))}
-                                 class="mr-2 h-5 w-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
-                             />
-                             <label htmlFor={`level-${level}`} class="text-sm font-medium text-gray-300 cursor-pointer">
-                                 Уровень {level} ({levelCounts[level] || 0})
-                             </label>
-                         </div>
-                     ))}
-                 </div>
+                    {/* Отображение кол-ва выбранных слов (Moved here) */}
+                    <div class="text-sm text-center font-medium mb-4 bg-gray-800 p-2 rounded">
+                        Выбрано: {totalSelectedWords} слов
+                    </div>
 
-                 {/* --- БЛОК: Выбор количества вариантов --- */}
-                  <h3 class="text-xl font-bold mb-2">2. Количество вариантов ответа:</h3>
-                  <div class="mb-6">
-                      <select
-                         value={numChoices}
-                         onChange={handleChoiceChange}
-                         class="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-blue-500 focus:border-blue-500"
-                       >
-                         {choiceOptions.map(option => (
-                             <option key={option} value={option}>
-                                 {option} варианта
-                             </option>
-                         ))}
-                      </select>
-                  </div>
-                 {/* --- КОНЕЦ БЛОКА --- */}
+                    {/* --- БЛОК: Выбор количества вариантов --- */}
+                    <h3 class="text-xl font-bold mb-2">2. Количество вариантов ответа:</h3>
+                    <div class="mb-6">
+                        <select
+                            value={numChoices}
+                            onChange={handleChoiceChange}
+                            class="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            {choiceOptions.map(option => (
+                                <option key={option} value={option}>
+                                    {option} варианта
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    {/* --- КОНЕЦ БЛОКА --- */}
 
-                 {/* --- НОВЫЙ БЛОК: Выбор формата вопроса и ответа --- */}
-                 <h3 class="text-xl font-bold mb-2">3. Формат вопроса и ответа:</h3>
-                 <div class="mb-4">
-                     <label class="block text-sm font-medium text-gray-300 mb-2">Что показывать в вопросе:</label>
-                     <select
-                         value={questionFormat}
-                         onChange={handleQuestionFormatChange}
-                         class="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-blue-500 focus:border-blue-500"
-                     >
-                         {getFormatOptions().map(option => (
-                             <option key={option.value} value={option.value}>
-                                 {option.label}
-                             </option>
-                         ))}
-                     </select>
-                 </div>
-                 <div class="mb-6">
-                     <label class="block text-sm font-medium text-gray-300 mb-2">Что показывать в вариантах ответа:</label>
-                     <select
-                         value={answerFormat}
-                         onChange={handleAnswerFormatChange}
-                         class="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-blue-500 focus:border-blue-500"
-                     >
-                         {getAvailableAnswerFormats(questionFormat).map(option => (
-                             <option key={option.value} value={option.value}>
-                                 {option.label}
-                             </option>
-                         ))}
-                     </select>
-                 </div>
-                 {/* --- КОНЕЦ НОВОГО БЛОКА --- */}
+                    {/* --- НОВЫЙ БЛОК: Выбор формата вопроса и ответа --- */}
+                    <h3 class="text-xl font-bold mb-2">3. Формат вопроса и ответа:</h3>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Что показывать в вопросе:</label>
+                        <select
+                            value={questionFormat}
+                            onChange={handleQuestionFormatChange}
+                            class="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            {getFormatOptions().map(option => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Что показывать в вариантах ответа:</label>
+                        <select
+                            value={answerFormat}
+                            onChange={handleAnswerFormatChange}
+                            class="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            {getAvailableAnswerFormats(questionFormat).map(option => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    {/* --- КОНЕЦ НОВОГО БЛОКА --- */}
 
-                 {/* Отображение кол-ва выбранных слов */}
-                 <div class="text-xl text-center font-semibold mb-6 bg-gray-800 p-3 rounded-lg"> {/* Убран font-bold, добавлен нижний отступ */}
-                     Всего для игры выбрано: {totalSelectedWords} слов
-                 </div>
+                    {/* --- КНОПКА ИГРАТЬ (Перенесена вниз) --- */}
+                    <div class="mt-4"> {/* Добавлен верхний отступ */}
+                        <button
+                            class={`w-full px-6 py-4 text-white rounded-lg text-xl font-bold ${canStartHsk ? 'bg-green-600 hover:bg-green-500' : 'bg-gray-600 cursor-not-allowed'}`}
+                            onClick={() => canStartHsk && startGame('hsk_game')}
+                            disabled={!canStartHsk}
+                        >
+                            Играть (HSK)
+                        </button>
+                    </div>
+                    {/* --- КОНЕЦ КНОПКИ ИГРАТЬ --- */}
 
-                 {/* --- КНОПКА ИГРАТЬ (Перенесена вниз) --- */}
-                 <div class="mt-4"> {/* Добавлен верхний отступ */}
+                </div>
+                {/* ===== Конец блока HSK ===== */}
+
+                {/* ===== Блок Слоги/Тоны (Moved below HSK) ===== */}
+                <div class="w-full border-t border-gray-700 pt-6 mt-4">
+                    <h2 class="text-2xl font-bold mb-4 text-center">Базовые упражнения</h2>
+                    <div class="flex gap-4">
+                        <button
+                            class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-500 text-lg font-medium"
+                            onClick={() => startGame('syllables')}
+                        >
+                            Слоги
+                        </button>
+                        <button
+                            class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-500 text-lg font-medium"
+                            onClick={() => startGame('tones')}
+                        >
+                            Тоны
+                        </button>
+                    </div>
+                </div>
+                {/* ===== Конец блока Слоги/Тоны ===== */}
+
+                {/* ===== Кнопка Список слов (Moved to bottom) ===== */}
+                <div class="w-full border-t border-gray-700 pt-6 mt-4">
                     <button
-                         class={`w-full px-6 py-4 text-white rounded-lg text-xl font-bold ${canStartHsk ? 'bg-green-600 hover:bg-green-500' : 'bg-gray-600 cursor-not-allowed'}`}
-                        onClick={() => canStartHsk && startGame('hsk_game')}
-                        disabled={!canStartHsk}
+                        class="w-full px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-500 text-lg font-medium"
+                        onClick={() => startGame('hsk')}
                     >
-                        Играть (HSK)
+                        📚 Список слов HSK
                     </button>
-                 </div>
-                 {/* --- КОНЕЦ КНОПКИ ИГРАТЬ --- */}
-
-             </div>
-             {/* ===== Конец блока HSK ===== */}
-         </div>
-     );
- }
- // ---
- // ---
-// ScoreDisplay component shows the current score (correct/incorrect answers) in the top right corner
-function ScoreDisplay({ correctCount, incorrectCount }) {
+                </div>
+                {/* ===== Конец кнопки Список слов ===== */}
+            </div>
+        );
+    }
+    // ---
+    // ---
+    // ScoreDisplay component shows the current score (correct/incorrect answers) in the top right corner
+    function ScoreDisplay({ correctCount, incorrectCount }) {
         return (
             <div class="absolute top-4 right-4 flex space-x-4 text-2xl font-bold">
                 <span class="text-green-400">{correctCount}</span>
@@ -521,9 +534,9 @@ function ScoreDisplay({ correctCount, incorrectCount }) {
         if (telegramApp.isInTelegram) {
             return null;
         }
-        
+
         return (
-            <button 
+            <button
                 class="absolute top-4 left-4 text-2xl bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
                 onClick={() => {
                     telegramApp.hapticFeedback('light');
@@ -535,13 +548,18 @@ function ScoreDisplay({ correctCount, incorrectCount }) {
 
     function QuestionAudio({ questionData, selectedAnswer, playAudio }) {
         let displayText = '???';
-        
+
         if (questionData && questionData.question) {
-            if(mode === 'hsk_game') {
-                // Всегда показываем выбранный формат вопроса (не меняем после ответа)
+            if (mode === 'hsk_game') {
+                // HSK: Всегда показываем выбранный формат вопроса (не меняем после ответа)
                 displayText = questionData.question.displayText || '???';
             } else {
-                displayText = questionData.question.pinyin; // Для слогов/тонов
+                // Syllables & Tones: Показываем текст только после ответа
+                if (selectedAnswer) {
+                    displayText = questionData.question.pinyin;
+                } else {
+                    displayText = '???';
+                }
             }
         }
 
@@ -572,7 +590,7 @@ function ScoreDisplay({ correctCount, incorrectCount }) {
         return (
             <div class="grid grid-cols-2 gap-4">
                 {questionData.choices.map(choice => (
-                    <button 
+                    <button
                         class={`w-40 h-16 text-xl px-6 py-3 rounded-lg font-medium border-2 transition-all 
                             ${selectedAnswer ? (choice.id === questionData.question.id ? 'bg-green-500 border-green-700 text-white' : choice.id === selectedAnswer.id ? 'bg-red-900 border-red-900 text-white' : 'bg-red-700 border-red-900 text-white') : 'bg-gray-800 border-gray-600 hover:bg-gray-700'}`}
                         onClick={() => {
@@ -595,7 +613,7 @@ function ScoreDisplay({ correctCount, incorrectCount }) {
         return (
             <div class="grid gap-4" style={{ gridTemplateColumns: '1fr' }}>
                 {[1, 2, 3, 4].map((tone, index) => (
-                    <button 
+                    <button
                         class={`w-40 h-16 text-3xl px-6 py-3 rounded-lg font-medium border-2 transition-all 
                             ${selectedAnswer ? (tone === questionData.question.tone ? 'bg-green-500 border-green-700 text-white' : tone === selectedAnswer ? 'bg-red-900 border-red-900 text-white' : 'bg-red-700 border-red-900 text-white') : 'bg-gray-800 border-gray-600 hover:bg-gray-700'}`}
                         onClick={() => handleAnswerClick(tone)}
@@ -637,7 +655,7 @@ function ScoreDisplay({ correctCount, incorrectCount }) {
                                 <td class="border border-gray-600 p-2 text-center text-xl">{entry.pinyin}</td>
                                 <td class="border border-gray-600 p-2">{entry.rus.join('; ')}</td>
                                 <td class="border border-gray-600 p-2 text-center">
-                                    <button 
+                                    <button
                                         class="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-500"
                                         onClick={() => playAudio(formatAudioFilename(entry.id))}
                                     >
@@ -669,7 +687,7 @@ function ScoreDisplay({ correctCount, incorrectCount }) {
                     const isIncorrectSelected = selectedAnswer && isSelectedChoice && !isCorrectChoice;
 
                     let buttonClass = 'bg-gray-800 border-gray-600 hover:bg-gray-700'; // Default
-                     if (selectedAnswer) {
+                    if (selectedAnswer) {
                         if (isCorrectChoice) {
                             buttonClass = 'bg-green-500 border-green-700 text-white'; // Correct answer
                         } else if (isIncorrectSelected) {
@@ -714,7 +732,7 @@ function ScoreDisplay({ correctCount, incorrectCount }) {
                     <HomeButton goHome={goHome} />
                 </>
             )}
-             {/* Отображение кнопки "Домой" для режима таблицы HSK */}
+            {/* Отображение кнопки "Домой" для режима таблицы HSK */}
             {userInteracted && mode === 'hsk' && (
                 <HomeButton goHome={goHome} />
             )}
@@ -738,11 +756,11 @@ function ScoreDisplay({ correctCount, incorrectCount }) {
                 // Режим таблицы HSK
                 <HSKTable />
             ) : (
-                 // Все игровые режимы (Слоги, Тоны, HSK Игра)
+                // Все игровые режимы (Слоги, Тоны, HSK Игра)
                 <>
                     {questionData ? (
                         <>
-                             <QuestionAudio
+                            <QuestionAudio
                                 questionData={questionData}
                                 selectedAnswer={selectedAnswer}
                                 playAudio={playAudio}
@@ -772,9 +790,9 @@ function ScoreDisplay({ correctCount, incorrectCount }) {
                             )}
 
                             {/* Кнопка "Следующий вопрос" только если ответ неверный или еще не дан */}
-                             {selectedAnswer && !(mode === 'hsk_game' && selectedAnswer.id === questionData.question.id) && !(mode === 'syllables' && selectedAnswer.id === questionData.question.id) && !(mode === 'tones' && selectedAnswer === questionData.question.tone) && (
+                            {selectedAnswer && !(mode === 'hsk_game' && selectedAnswer.id === questionData.question.id) && !(mode === 'syllables' && selectedAnswer.id === questionData.question.id) && !(mode === 'tones' && selectedAnswer === questionData.question.tone) && (
                                 <div class="mt-6">
-                                     <button
+                                    <button
                                         class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-500"
                                         onClick={nextQuestion}
                                     >
@@ -784,10 +802,10 @@ function ScoreDisplay({ correctCount, incorrectCount }) {
                             )}
                         </>
                     ) : (
-                         // Сообщение, если вопрос не загрузился (маловероятно, но на всякий случай)
-                         <p>Загрузка вопроса...</p>
+                        // Сообщение, если вопрос не загрузился (маловероятно, но на всякий случай)
+                        <p>Загрузка вопроса...</p>
                     )}
-                 </>
+                </>
             )}
         </div>
     );
