@@ -82,14 +82,61 @@ export default function PinyinQuiz() {
             displayText: formatDisplayText(questionWord, questionFormat) // Добавляем отформатированный текст
         };
 
-        // Формируем варианты ответов (правильный + неправильные)
-        const choices = [questionWord]; // Начинаем с правильного ответа
-        const distractors = wordPool.filter(word => word.id !== questionWord.id); // Все остальные слова - кандидаты в дистракторы
+        // Функция для получения умных дистракторов
+        function getSmartDistractors(correctWord, allWords, needed) {
+            const distractors = allWords.filter(word => word.id !== correctWord.id);
+            
+            // Приоритизируем дистракторы по схожести
+            const scoredDistractors = distractors.map(word => {
+                let score = 0;
+                
+                // Схожесть по уровню HSK (слова того же уровня более похожи)
+                if (word.level === correctWord.level) score += 3;
+                
+                // Схожесть по длине пиньинь
+                if (Math.abs(word.pinyin.length - correctWord.pinyin.length) <= 1) score += 2;
+                
+                // Схожесть по первому символу пиньинь (похожие звуки)
+                if (word.pinyin[0] === correctWord.pinyin[0]) score += 2;
+                
+                // Схожесть по тону (последний символ пиньинь часто содержит тон)
+                const correctTone = correctWord.pinyin.slice(-1);
+                const wordTone = word.pinyin.slice(-1);
+                if (correctTone === wordTone && /[1-4]/.test(correctTone)) score += 1;
+                
+                // Схожесть по количеству иероглифов
+                if (word.hanzi.length === correctWord.hanzi.length) score += 1;
+                
+                // Добавляем случайность для разнообразия
+                score += Math.random() * 2;
+                
+                return { word, score };
+            });
+            
+            // Сортируем по убыванию схожести и берем нужное количество
+            scoredDistractors.sort((a, b) => b.score - a.score);
+            
+            // Берем только 20% лучших кандидатов, но минимум нужное количество + 2 для выбора
+            const minCandidates = Math.max(needed + 2, 4); // Минимум 4 кандидата или needed + 2
+            const topPercentage = Math.max(minCandidates, Math.floor(scoredDistractors.length * 0.2));
+            const topCandidates = scoredDistractors.slice(0, topPercentage);
+            const selected = [];
+            
+            while (selected.length < needed && topCandidates.length > 0) {
+                const randomIndex = Math.floor(Math.random() * topCandidates.length);
+                selected.push(topCandidates.splice(randomIndex, 1)[0].word);
+            }
+            
+            return selected;
+        }
 
-        const numDistractorsNeeded = Math.min(numChoices - 1, distractors.length);
-        while (choices.length < numDistractorsNeeded + 1 && distractors.length > 0) {
-             const distractorIndex = Math.floor(Math.random() * distractors.length);
-            choices.push(distractors.splice(distractorIndex, 1)[0]);
+        // Формируем варианты ответов с умными дистракторами
+        const choices = [questionWord]; // Начинаем с правильного ответа
+        const numDistractorsNeeded = Math.min(numChoices - 1, wordPool.length - 1);
+        
+        if (numDistractorsNeeded > 0) {
+            const smartDistractors = getSmartDistractors(questionWord, wordPool, numDistractorsNeeded);
+            choices.push(...smartDistractors);
         }
 
         // Перемешиваем варианты ответов
