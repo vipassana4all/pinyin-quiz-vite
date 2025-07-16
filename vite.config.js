@@ -3,6 +3,7 @@ import preact from '@preact/preset-vite';
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
+  base: process.env.NODE_ENV === 'production' ? '/pinyin-quiz-vite/' : '/',
   loader: { '.js': 'jsx' },
   server: {
     allowedHosts: [".ngrok-free.app"],

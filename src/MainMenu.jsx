@@ -2,6 +2,7 @@ import { h } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
 import generateAnswers from './generateAnswers';
 import hskData from './hsk2.json';
+import telegramApp from './telegram.js';
 
 export default function PinyinQuiz() {
     const [questionData, setQuestionData] = useState(null);
@@ -41,6 +42,33 @@ export default function PinyinQuiz() {
     useEffect(() => {
         calculateTotalSelectedWords();
     }, [selectedLevels]);
+
+    // Telegram WebApp initialization
+    useEffect(() => {
+        if (telegramApp.isInTelegram) {
+            console.log('Running in Telegram WebApp');
+            
+            // Set up back button for game modes
+            if (userInteracted) {
+                telegramApp.showBackButton(() => {
+                    telegramApp.hapticFeedback('light');
+                    goHome();
+                });
+            } else {
+                telegramApp.hideBackButton();
+            }
+        }
+    }, [userInteracted]);
+
+    // Update Telegram back button when mode changes
+    useEffect(() => {
+        if (telegramApp.isInTelegram && userInteracted) {
+            telegramApp.showBackButton(() => {
+                telegramApp.hapticFeedback('light');
+                goHome();
+            });
+        }
+    }, [mode]);
 
     function calculateTotalSelectedWords() {
         let total = 0;
@@ -162,6 +190,9 @@ export default function PinyinQuiz() {
             return;
         }
         
+        // Haptic feedback for button press
+        telegramApp.hapticFeedback('light');
+        
         setMode(selectedMode);
         setUserInteracted(true);
         setSelectedAnswer(null); // Сброс выбранного ответа
@@ -241,9 +272,11 @@ export default function PinyinQuiz() {
         }
 
         if (isCorrect) {
+            telegramApp.hapticFeedback('success');
             setCorrectCount(correctCount + 1);
             setTimeout(nextQuestion, 800); // Задержка перед следующим вопросом чуть больше
         } else {
+            telegramApp.hapticFeedback('error');
             setIncorrectCount(incorrectCount + 1);
             // Не переходим автоматически при ошибке
         }
@@ -484,10 +517,18 @@ function ScoreDisplay({ correctCount, incorrectCount }) {
     }
 
     function HomeButton({ goHome }) {
+        // Hide home button in Telegram since we have native back button
+        if (telegramApp.isInTelegram) {
+            return null;
+        }
+        
         return (
             <button 
                 class="absolute top-4 left-4 text-2xl bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
-                onClick={goHome}
+                onClick={() => {
+                    telegramApp.hapticFeedback('light');
+                    goHome();
+                }}
             >🏠</button>
         );
     }
