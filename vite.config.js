@@ -5,6 +5,7 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   loader: { '.js': 'jsx' },
   server: {
+    allowedHosts: [".ngrok-free.app"],
     port: 3000,
   },
   plugins: [preact(), tailwindcss(),],

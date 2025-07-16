@@ -1,5 +1,5 @@
 import { h, render } from 'preact';
-import PinyinQuiz from './PinyinQuiz';
+import MainMenu from './MainMenu';
 import './index.css';
 
-render(<PinyinQuiz />, document.getElementById('app'));
+render(<MainMenu />, document.getElementById('app'));
